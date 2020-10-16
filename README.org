@@ -1,1 +1,14 @@
-This is the QDA by Projection project
+* QDA by Projection project -- Numerical Analysis
+This is the numerical analysis part of the *QDA by Projection*
+project.
+There are two literate programming scripts:
+- [[file:simulation.org]]
+- [[file:real_data.org]]
+In order to run those, you need to install the following *R* packages:
+- [[https://github.com/ywwry66/QDA-by-Projection-R-Package][QDAP]] (our *QDA by Projection* method)
+- [[https://cran.r-project.org/src/contrib/Archive/rda/][RDA]]
+- [[https://ani.stat.fsu.edu/~mai/research.html][DSDA]]
+- [[https://cran.r-project.org/web/packages/DAP/index.html][DAP]]
+You would also need GNU Emacs in order to run the code blocks in the
+org files. Just use ~C-c C-c~ within each ~#+begin_src~ blocks and
+~#+call~ block calls (these are called library of babel calls techniquely)
