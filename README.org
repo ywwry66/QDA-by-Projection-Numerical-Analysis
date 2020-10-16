@@ -9,6 +9,12 @@ In order to run those, you need to install the following *R* packages:
 - [[https://cran.r-project.org/src/contrib/Archive/rda/][RDA]]
 - [[https://ani.stat.fsu.edu/~mai/research.html][DSDA]]
 - [[https://cran.r-project.org/web/packages/DAP/index.html][DAP]]
-You would also need GNU Emacs in order to run the code blocks in the
-org files. Just use ~C-c C-c~ within each ~#+begin_src~ blocks and
-~#+call~ block calls (these are called library of babel calls techniquely)
+You would also need [[https://www.gnu.org/software/emacs/][GNU Emacs]] to run the code blocks in the org
+files. Just use ~C-c C-c~ within each ~#+begin_src~ blocks and
+~#+call~ block calls (these are called library of babel calls
+technically).
+
+Run all the code blocks (except the ones in the [[file:~/Desktop/QDA by Projection/Numerical_Analysis/simulation.org::*Various Code Blocks][appendix]]) in
+sequential order, and you will get two .RData files and a bunch of
+images, which summarizes the result of our numerical analysis, under
+~./out~.
