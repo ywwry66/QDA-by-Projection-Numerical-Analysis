@@ -4,3 +4,4 @@ old plots
 out
 *.tex
 *.pdf
+*.Rmd
