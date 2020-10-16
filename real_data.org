@@ -1,0 +1,211 @@
+#+title: QDA by Projection Real Data
+#+author: Ruiyang Wu
+
+#+property: header-args :session *R:QDA by Projection* :results output silent :eval no-export
+#+latex_header: \usepackage{booktabs}
+
+#+name: r initialization
+#+begin_src R :exports none
+  library(doParallel)
+  library(doRNG)
+  library(tidyr)
+  library(dplyr)
+  library(ggplot2)
+  source("R/datasplit.R")
+  source("R/data_analysis_wrapper.R")
+  source("R/data_summary.R")
+  source("R/resave.R")
+  num_cores <- detectCores()
+  registerDoParallel(cores = num_cores)
+  if (file.exists("out/real_data_summary.RData"))
+    load("out/real_data_summary.RData")
+#+end_src
+
+* Breast Cancer
+$p=9$, $n=699$. Repeat $m=100$ times for average test error.
+
+#+name: breast cancer setup
+#+begin_src R
+  seed <- 2020
+  m <- 100
+  per <- c(0.4, 0.5, 0.6, 0.7, 0.8)
+  bc <- read.csv("real_data/breast-cancer-wisconsin.data", header = FALSE)
+  y <- bc[, 11]
+  id0 <- which(y == 2)
+  id1 <- which(y == 4)
+  y[id0] <- 0
+  y[id1] <- 1
+  x <- data.matrix(bc[, 2:10])
+#+end_src
+
+#+call: data split()
+
+#+call: models evaluation(name="breast_cancer")
+
+#+call: data summary(name="breast_cancer")
+
+* Ultrasonic Flowmeter
+$p=36$, $n=87$. Repeat $m=100$ times for average test error.
+
+#+name: flowmeter setup
+#+begin_src R
+  seed <- 2020
+  m <- 100
+  per <- c(0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
+  fm <- read.table("real_data/Meter A.data")
+  y <- fm[, 37]
+  id0 <- which(y == 2)
+  id1 <- which(y == 1)
+  y[id0] <- 0
+  y[id1] <- 1
+  x <- data.matrix(fm[, 1:36])
+#+end_src
+
+#+call: data split()
+
+#+call: models evaluation(qda="FALSE",name="flowmeter")
+
+#+call: data summary(name="flowmeter")
+
+* Heart Disease
+$p=13$, $n=303$. Repeat $m=100,300$ times for average test error.
+
+#+name: heart disease setup
+#+begin_src R
+  seed <- 2020
+  m <- 300
+  per <- c(0.4, 0.5, 0.6, 0.7, 0.8)
+  hd <- read.csv("real_data/heart.csv")
+  y <- hd[, 14]
+  id0 <- which(y == 0)
+  id1 <- which(y == 1)
+  x <- data.matrix(hd[, 1:13])
+#+end_src
+
+#+call: data split()
+
+#+call: models evaluation(name="heart_disease")
+
+#+call: data summary(name="heart_disease")
+
+* Accent Recognition
+
+#+name: accent recognition setup
+#+begin_src R
+  seed <- 2020
+  m <- 100
+  per <- c(0.4, 0.5, 0.6, 0.7, 0.8)
+  ar <- read.csv("real_data/accent-mfcc-data-1.csv")
+  ar <- ar[c(which(ar[, 1] == "GE"), which(ar[, 1] == "FR")), ]
+  y <- ar[, 1]
+  id0 <- which(y == "GE")
+  id1 <- which(y == "FR")
+  y[id0] <- 0
+  y[id1] <- 1
+  y <- as.numeric(y)
+  x <- data.matrix(ar[, 2:13])
+#+end_src
+
+#+call: data split()
+
+#+call: models evaluation(qda="FALSE",name="accent_rec")
+
+#+call: data summary(name="accent_rec")
+
+* Parkinson Disease
+
+#+name: parkinson disease setup
+#+begin_src R
+  seed <- 2020
+  m <- 100
+  per <- c(0.4, 0.5, 0.6, 0.7, 0.8)
+  pd <- read.csv("real_data/ParkinsonDatabase.csv")
+  y <- pd[, 3]
+  id0 <- which(y == 0)
+  id1 <- which(y == 1)
+  x <- data.matrix(pd[, 5:48])
+  x[, 2] <- x[, 2] * 10000
+#+end_src
+
+#+call: data split()
+
+#+call: models evaluation(name="parkinson")
+
+#+call: data summary(name="parkinson")
+
+* Heart Failure Clinical Records
+
+#+name: heart failure setup
+#+begin_src R
+  seed <- 2020
+  m <- 100
+  per <- c(0.4, 0.5, 0.6, 0.7, 0.8)
+  hf <- read.csv("real_data/heart_failure_clinical_records_dataset.csv")
+  y <- hf[, 13]
+  id0 <- which(y == 0)
+  id1 <- which(y == 1)
+  x <- data.matrix(hf[, 1:12])
+#+end_src
+
+#+call: data split()
+
+#+call: models evaluation(name="heart_failure")
+
+#+call: data summary(name="heart_failure")
+
+* Breast Cancer Coimbra
+
+#+name: breast cancer coimbre setup
+#+begin_src R
+  seed <- 2020
+  m <- 100
+  per <- c(0.4, 0.5, 0.6, 0.7, 0.8)
+  bcc <- read.csv("real_data/Breast Cancer Coimbra.csv")
+  y <- bcc[, 10]
+  id0 <- which(y == 2)
+  id1 <- which(y == 1)
+  y[id0] <- 0
+  y[id1] <- 1
+  x <- data.matrix(bcc[, 1:9])
+#+end_src
+
+#+call: data split()
+
+#+call: models evaluation(name="breast_cancer_coimbra")
+
+#+call: data summary(name="breast_cancer_coimbra")
+
+* Various Code Blocks
+:PROPERTIES:
+:APPENDIX: t
+:END:
+** Data Split Code
+#+name: data split
+#+begin_src R
+  set.seed(seed)
+  id <- datasplit(id0 = id0, id1 = id1,
+                     m = m, per = per)
+#+end_src
+** Models Evaluation Code
+#+name: models evaluation
+#+begin_src R :var lda="TRUE" qda="TRUE" dsda="TRUE" sqda="TRUE" rda="TRUE"
+  len_per <- length(per)
+  pred_err <- vector("list", len_per)
+  for (i in 1:len_per) {
+    pred_err[[i]] <- foreach(j = 1:m, .combine = rbind,
+                             .options.RNG = seed) %dorng%
+      data_analysis(x = x[id[[i]][[j]], ], y = y[id[[i]][[j]]],
+                    xnew = x[-id[[i]][[j]], ], ynew = y[-id[[i]][[j]]],
+                    lda = lda, qda = qda, dsda = dsda, sqda = sqda, rda = rda)
+  }
+  obj_name <- paste0("pred_err_", name)
+  assign(obj_name, pred_err)
+  resave(list = obj_name, file = "out/real_data_summary.RData")
+#+end_src
+** Data Summary Code
+#+name: data summary
+#+begin_src R
+  obj_name <- paste0("pred_err_", name)
+  plot_data_rd(get(obj_name), per = per,
+            out = paste0("out/", name, ".pdf"))
+#+end_src

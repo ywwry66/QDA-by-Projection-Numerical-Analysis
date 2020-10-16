@@ -1,0 +1,256 @@
+#+title: QDA by Projection Simulations
+#+author: Ruiyang Wu
+
+#+property: header-args :session *R:QDA by Projection* :results output silent :eval no-export
+#+latex_header: \usepackage{booktabs}
+
+#+name: r initialization
+#+begin_src R :exports none
+  library(doParallel)
+  library(doRNG)
+  library(tidyr)
+  library(dplyr)
+  library(ggplot2)
+  source("R/datagen_sl.R")
+  source("R/data_analysis_wrapper.R")
+  source("R/data_summary.R")
+  source("R/resave.R")
+  num_cores <- detectCores()
+  registerDoParallel(cores = num_cores)
+  if (file.exists("out/simulation_summary.RData"))
+    load("out/simulation_summary.RData")
+#+end_src
+
+* Simulation 1
+Dimension \(p=50\). Only one direction is useful for classification,
+and LAD assumption is satisfied.
+
+There are \(n_0\) training samples and 100 test samples in class 0,
+\(n_1\) training samples and 100 test samples in class 1, where
+\(n_0=n_1=100,150,200,250,300\). Repeat \(m=100\) times for average
+test error.
+
+#+name: simulation 1 setup
+#+begin_src R
+  seed <- 2020
+  p <- 50
+  m <- 100
+  ntest <- 500
+  n <- c(100, 150, 200, 250, 300)
+  mu0 <- rep(0, p)
+  mu1 <- rep(1 / 3, p)
+  sigma0 <- diag(p)
+  sigma1 <- diag(p)
+#+end_src
+
+#+call: data generation()
+
+#+call: models evaluation(name="sl1")
+
+#+call: data summary[:results value replace :colnames yes](name="sl1")
+#+attr_latex: :booktabs t
+#+RESULTS:
+|   n | DAP          | DSDA         | LDA          | Oracle       | QDA          | QDAP         | RDA          |
+|-----+--------------+--------------+--------------+--------------+--------------+--------------+--------------|
+| 100 | 19.04 (0.17) | 17.59 (0.17) | 17.41 (0.18) | 11.89 (0.10) | 35.79 (0.25) | 17.46 (0.18) | 14.22 (0.16) |
+| 150 | 16.74 (0.14) | 15.68 (0.14) | 15.37 (0.14) | 11.93 (0.10) | 31.37 (0.20) | 15.42 (0.14) | 13.41 (0.13) |
+| 200 | 15.95 (0.15) | 15.00 (0.13) | 14.63 (0.13) | 11.86 (0.11) | 28.79 (0.19) | 14.65 (0.13) | 13.08 (0.10) |
+| 250 | 15.04 (0.12) | 14.29 (0.12) | 14.07 (0.11) | 11.72 (0.10) | 26.39 (0.18) | 14.06 (0.11) | 12.84 (0.09) |
+| 300 | 14.52 (0.13) | 13.92 (0.12) | 13.64 (0.12) | 11.90 (0.11) | 24.63 (0.17) | 13.67 (0.12) | 12.74 (0.11) |
+
+* Simulation 2
+I have to change seed to 2019 for this one, or it will throw an error
+saying "error code 1 from Lapack routine 'dgesdd'". It turns out to be
+concerning rda.
+
+#+name: simulation 2 setup
+#+begin_src R
+  seed <- 2019
+  p <- 50
+  m <- 100
+  ntest <- 500
+  n <- c(100, 150, 200, 250, 300)
+  mu0 <- rep(0, p)
+  mu1 <- rep(1, p)
+  set.seed(seed)
+  temp <- matrix(rnorm(n = p * p), nrow = p)
+  sigma0 <- t(temp) %*% temp + diag(runif(n = p))
+  sigma1 <- sigma0
+  rm(temp)
+#+end_src
+
+#+call: data generation()
+
+#+call: models evaluation(name="sl2")
+
+#+call: data summary[:results value replace :colnames yes](name="sl2")
+#+attr_latex: :booktabs t
+#+RESULTS:
+|   n | DAP          | DSDA         | LDA          | Oracle      | QDA          | QDAP         | RDA          |
+|-----+--------------+--------------+--------------+-------------+--------------+--------------+--------------|
+| 100 | 26.69 (0.33) | 15.47 (0.18) | 14.82 (0.15) | 9.75 (0.09) | 34.12 (0.23) | 14.86 (0.15) | 15.39 (0.17) |
+| 150 | 21.56 (0.26) | 13.18 (0.15) | 12.75 (0.13) | 9.69 (0.08) | 28.52 (0.23) | 12.79 (0.13) | 13.20 (0.15) |
+| 200 | 19.62 (0.25) | 12.63 (0.16) | 12.23 (0.14) | 9.78 (0.10) | 25.54 (0.16) | 12.24 (0.14) | 12.47 (0.15) |
+| 250 | 18.14 (0.16) | 11.73 (0.11) | 11.41 (0.10) | 9.66 (0.09) | 23.15 (0.17) | 11.45 (0.10) | 11.60 (0.10) |
+| 300 | 17.26 (0.17) | 11.48 (0.12) | 11.24 (0.10) | 9.68 (0.10) | 21.44 (0.17) | 11.26 (0.10) | 11.45 (0.11) |
+
+* Simulation 3
+
+#+name: simulation 3 setup
+#+begin_src R
+  seed <- 2020
+  p <- 50
+  m <- 100
+  ntest <- 500
+  n <- c(100, 150, 200, 250, 300)
+  mu0 <- rep(0, p)
+  mu1 <- rep(1, p)
+  sigma0 <- diag(p)
+  sigma1 <- diag(p) + matrix(rep(2, p^2), nrow = p)
+#+end_src
+
+#+call: data generation()
+
+#+call: models evaluation(name="sl3")
+
+#+call: data summary[:results value replace :colnames yes](name="sl3")
+#+attr_latex: :booktabs t
+#+RESULTS:
+|   n | DAP          | DSDA         | LDA          | Oracle      | QDA          | QDAP         | RDA          |
+|-----+--------------+--------------+--------------+-------------+--------------+--------------+--------------|
+| 100 | 15.24 (0.19) | 24.69 (0.28) | 37.18 (0.28) | 7.94 (0.08) | 28.41 (0.23) | 17.02 (0.24) | 18.09 (0.13) |
+| 150 | 12.37 (0.14) | 23.41 (0.23) | 34.99 (0.29) | 8.10 (0.09) | 25.33 (0.18) | 11.80 (0.16) | 18.27 (0.14) |
+| 200 | 11.34 (0.13) | 22.69 (0.21) | 33.12 (0.25) | 8.20 (0.10) | 23.57 (0.18) | 10.38 (0.12) | 18.27 (0.13) |
+| 250 | 10.51 (0.11) | 21.92 (0.19) | 31.57 (0.24) | 8.21 (0.09) | 21.82 (0.13) | 9.59 (0.10)  | 18.09 (0.12) |
+| 300 | 9.90 (0.09)  | 21.33 (0.16) | 30.50 (0.22) | 8.06 (0.07) | 20.43 (0.16) | 9.14 (0.08)  | 18.16 (0.13) |
+
+* Simulation 4
+Dimension \(p=50\). Only one direction is useful for classification,
+and LAD assumption is extremely not satisfied.
+
+There are \(n_0\) training samples and 100 test samples in class 0,
+\(n_1\) training samples and 100 test samples in class 1, where
+\(n_0=n_1=100,150,200,250,300\). Repeat \(m=100\) times for average
+test error.
+
+#+name: simulation 4 setup
+#+begin_src R
+  seed <- 2020
+  p <- 50
+  m <- 100
+  ntest <- 500
+  n <- c(100, 150, 200, 250, 300)
+  mu0 <- rep(0, p)
+  mu1 <- rep(0, p)
+  sigma0 <- diag(p)
+  sigma1 <- diag(p) + matrix(rep(2, p^2), nrow = p)
+#+end_src
+
+#+call: data generation()
+
+#+call: models evaluation(name="sl4")
+
+#+call: data summary[:results value replace :colnames yes](name="sl4")
+#+attr_latex: :booktabs t
+#+RESULTS:
+|   n | DAP          | DSDA         | LDA          | Oracle       | QDA          | QDAP         | RDA          |
+|-----+--------------+--------------+--------------+--------------+--------------+--------------+--------------|
+| 100 | 25.64 (0.91) | 49.60 (0.18) | 49.94 (0.17) | 10.10 (0.08) | 30.59 (0.21) | 19.54 (0.24) | 46.49 (0.48) |
+| 150 | 20.72 (0.89) | 49.81 (0.17) | 50.14 (0.17) | 9.91 (0.08)  | 27.61 (0.17) | 13.89 (0.16) | 46.35 (0.42) |
+| 200 | 17.89 (0.64) | 49.77 (0.15) | 50.25 (0.16) | 9.93 (0.09)  | 25.87 (0.17) | 12.49 (0.13) | 46.41 (0.45) |
+| 250 | 18.61 (0.81) | 49.97 (0.18) | 50.24 (0.17) | 10.16 (0.10) | 24.42 (0.15) | 11.79 (0.11) | 47.29 (0.34) |
+| 300 | 19.69 (1.09) | 49.86 (0.15) | 49.91 (0.16) | 9.96 (0.09)  | 22.90 (0.16) | 11.24 (0.10) | 47.68 (0.31) |
+
+* Simulation 5
+
+#+name: simulation 5 setup
+#+begin_src R
+  seed <- 2020
+  p <- 50
+  m <- 200
+  ntest <- 500
+  n <- c(100, 150, 200, 250, 300)
+  mu0 <- rep(0, p)
+  mu1 <- rep(1 / 3, p)
+  sigma0 <- diag(p)
+  temp <- abs(outer(1:p, 1:p, "-"))
+  sigma1 <- 0.3^temp
+  rm(temp)
+#+end_src
+
+#+call: data generation()
+
+#+call: models evaluation(name="sl5")
+
+#+call: data summary[:results value replace :colnames yes](name="sl5")
+#+attr_latex: :booktabs t
+#+RESULTS:
+|   n | DAP          | DSDA         | LDA          | Oracle      | QDA          | QDAP         | RDA          |
+|-----+--------------+--------------+--------------+-------------+--------------+--------------+--------------|
+| 100 | 23.16 (0.17) | 21.83 (0.13) | 21.98 (0.14) | 7.33 (0.06) | 29.72 (0.15) | 21.72 (0.14) | 17.45 (0.11) |
+| 150 | 20.96 (0.13) | 20.04 (0.12) | 19.79 (0.11) | 7.38 (0.06) | 24.06 (0.12) | 19.54 (0.11) | 16.81 (0.10) |
+| 200 | 19.73 (0.12) | 18.96 (0.11) | 18.81 (0.10) | 7.28 (0.06) | 20.76 (0.12) | 18.56 (0.10) | 16.60 (0.08) |
+| 250 | 18.95 (0.11) | 18.44 (0.09) | 18.26 (0.09) | 7.30 (0.06) | 18.40 (0.11) | 18.00 (0.10) | 16.30 (0.09) |
+| 300 | 18.42 (0.09) | 17.93 (0.09) | 17.77 (0.09) | 7.31 (0.05) | 16.77 (0.09) | 17.57 (0.09) | 16.31 (0.09) |
+
+* Various Code Blocks
+:PROPERTIES:
+:APPENDIX: t
+:END:
+** Data Generation Code
+#+name: data generation
+#+begin_src R
+  set.seed(seed)
+  data <- datagen_sl(mu0 = mu0, mu1 = mu1,
+                     sigma0 = sigma0, sigma1 = sigma1,
+                     m = m, ntest = ntest, n = n)
+#+end_src
+** Models Evaluation Code
+#+name: models evaluation
+#+begin_src R :var lda="TRUE" qda="TRUE" dsda="TRUE" sqda="TRUE" rda="TRUE"
+  len_n <- length(n)
+  pred_err <- vector("list", len_n)
+  for (i in 1:len_n) {
+    pred_err[[i]] <- foreach(j = 1:m, .combine = rbind,
+                             .options.RNG = seed) %dorng%
+      data_analysis_sl(x = data$x[[i]][[j]], y = data$y[[i]],
+                       xnew = data$xnew[[i]][[j]], ynew = data$ynew[[i]],
+                       oracle_rule = data$oracle_rule, lda = lda, qda = qda,
+                       dsda = dsda, sqda = sqda, rda = rda)
+  }
+  obj_name <- paste0("pred_err_", name)
+  assign(obj_name, pred_err)
+  resave(list = obj_name, file = "out/simulation_summary.RData")
+#+end_src
+** Data Summary Code
+#+name: data summary
+#+begin_src R
+  obj_name <- paste0("pred_err_", name)
+  out <- paste0("out/", name, ".pdf")
+  len_n <- length(n)
+  data_summarized <- NULL
+  for (i in 1:len_n) {
+    data_summarized <-
+      rbind(data_summarized,
+            data.frame(summary_se(get(obj_name)[[i]]), n = n[i]))
+  }
+  pdf(out)
+  pd <- position_dodge(8)
+  plot <- ggplot(data_summarized, aes(x = n, y = prediction.error,
+                                      colour = method)) +
+    geom_errorbar(aes(ymin = prediction.error - ci.95,
+                      ymax = prediction.error + ci.95),
+                  width = 10, position = pd) +
+    geom_line(position = pd) +
+    geom_point(position = pd)
+  print(plot)
+  dev.off()
+  data_summarized %>%
+    dplyr::select(- ci.95) %>%
+    mutate(prediction.error = format(round(prediction.error*100, 2), nsmall = 2)) %>%
+    mutate(standard.error =
+             paste0("(", format(round(standard.error*100, 2), nsmall = 2), ")")) %>%
+    unite(col = prediction.error, prediction.error, standard.error, sep = " ") %>%
+    spread(key = method, value = prediction.error)
+#+end_src
+

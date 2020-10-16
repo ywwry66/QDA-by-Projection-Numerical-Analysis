@@ -1,0 +1,749 @@
+---
+title: "Simulation"
+author: "Ruiyang Wu"
+date: "4/14/2019"
+output: pdf_document
+header-includes:
+- \usepackage{graphicx,hhline}
+- \usepackage{amssymb}
+- \usepackage{amsfonts}
+- \usepackage{amscd}
+- \usepackage{amsthm}
+- \usepackage{amsmath}
+- \usepackage{mathabx}
+- \usepackage{multirow}
+---
+
+\newcommand{\rE}{\mathrm{E}}
+\newcommand{\var}{\mathrm{Var}}
+\newcommand{\cov}{\mathrm{Cov}}
+\newcommand{\ba}{\mbox{\boldmath $a$}}
+\newcommand{\be}{\mbox{\boldmath $e$}}
+\newcommand{\bx}{\mbox{\boldmath $x$}}
+\newcommand{\bX}{\mbox{\boldmath $X$}}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = FALSE)
+library(DAP)
+library(rda)
+library(MASS)
+library(ggplot2)
+library(dsda)
+source('datagen.R')
+source('QDAp.R')
+source('QDAp_2.R')
+```
+
+### 1.
+
+Simulation 1: Dimension $p=50$. Only one direction is useful for classification, and LDA assumption is extremely not satisfied.
+
+$\Sigma_0=\left(\begin{array}{cccc} 3 & &\multicolumn{2}{c}{\multirow{2}{*}{\scalebox{2}{2}}}\\&3&&\\\multicolumn{2}{c}{\multirow{2}{*}{\scalebox{2}{2}}}&\ddots&\\ &&&3\end{array}\right)$, $\Sigma_1=I_{50}$. $\mu_0=\mu_1=(0,\dots,0)^{\mathrm T}$.
+
+There are $100$ test samples in class 0 and $100$ test samples in class 1. Repeat $m=100$ times for average test error. 
+
+Generate training data:
+```{r}
+df_S1=NULL
+```
+```{r}
+p=50
+set.seed(301)
+x=list()
+m=100
+n=300
+for(i in 1:m){
+  x[[i]]=rbind(datagen(n=n,p=p,rho=2/3)*sqrt(3),datagen(n=n,p=p))
+}
+y=c(rep(0,n),rep(1,n))
+```
+
+Generate test data:
+```{r}
+set.seed(401)
+xnew=list()
+for(i in 1:m){
+  xnew[[i]]=rbind(datagen(n=100,p=p,rho=2/3)*sqrt(3),datagen(n=100,p=p))
+}
+ynew=c(rep(0,100),rep(1,100))
+```
+
+Our method:
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  ypred=QDAp(x[[i]],as.factor(y),xnew[[i]],lambda=0,iter = 1)$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S1=rbind(df_S1,data.frame(Methods="Our method",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+LDA:
+```{r warning=FALSE}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  fit.lda<-lda(x[[i]],as.factor(y))
+  ypred=predict(fit.lda,xnew[[i]])$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S1=rbind(df_S1,data.frame(Methods="LDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Direct Sparse Discriminant Analysis (QING MAI, HUI ZOU, MING YUAN):
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  pe[i]=dsda(as.matrix(x[[i]]),y,as.matrix(xnew[[i]]),ynew)$error
+}
+df_S1=rbind(df_S1,data.frame(Methods="SLDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+QDA:  
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  fit.qda=qda(x[[i]],as.factor(y))
+  ypred=predict(fit.qda,xnew[[i]])$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S1=rbind(df_S1,data.frame(Methods="QDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Sparse quadratic classification rules via linear dimension reduction (Irina Gaynanova and Tianying Wang):
+```{r results='hide'}
+y[which(y==0)]=2
+ynew[which(ynew==0)]=2
+pe=rep(0,m)
+for(i in 1:m){
+  pe[i]=apply_DAP(x[[i]],y,xnew[[i]],ynew)$error
+}
+df_S1=rbind(df_S1,data.frame(Methods="SQDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+RDA:
+```{r results='hide'}
+y[which(y==0)]=2
+ynew[which(ynew==0)]=2
+pe=rep(0,m)
+for(i in 1:m){
+  fit.rda<-rda(t(x[[i]]),as.factor(y))
+  err<-rda.cv(fit.rda,t(x[[i]]),as.factor(y))$cv.err
+  par<-arrayInd(which.min(err),dim(err))
+  fit.rda<-rda(t(x[[i]]),as.factor(y),alpha = seq(0, 0.99, len=10)[par[1]],delta = seq(0, 3, len=10)[par[2]])
+  ypred=predict(fit.rda,t(x[[i]]),as.factor(y),t(xnew[[i]]),type="class")
+  pe[i]=mean(ynew!=ypred)
+}
+df_S1=rbind(df_S1,data.frame(Methods="RDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Population Bayesian rule:
+```{r}
+df_S1=rbind(df_S1,data.frame(Methods="Population",n=n,Prediction.Error=as.numeric(MisRate(1,0,0,101,1)),ci=0))
+```
+
+Oracle:
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  ypred=as.numeric((-0.5*log(101)-0.5*(xnew[[i]]%*%rep(1,50)/sqrt(50))^2/101) < (-0.5*(xnew[[i]]%*%rep(1,50)/sqrt(50))^2))
+  pe[i]=mean(ynew!=ypred)
+}
+df_S1=rbind(df_S1,data.frame(Methods="Oracle",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Plot CI:
+```{r}
+pdf("Simulation1.pdf")
+pd <- position_dodge(8)
+ggplot(df_S1, aes(x=n, y=Prediction.Error, colour=Methods)) + 
+    geom_errorbar(aes(ymin=Prediction.Error-ci, ymax=Prediction.Error+ci), width=10, position=pd) +
+    geom_line(position=pd) +
+    geom_point(position=pd)
+dev.off()
+```
+
+### 2.
+
+Simulation 2: Dimension $p=50$. Only one direction is useful for classification, and LDA assumption is not satisfied.
+
+$\Sigma_0=\left(\begin{array}{cccc} 3 & &\multicolumn{2}{c}{\multirow{2}{*}{\scalebox{2}{2}}}\\&3&&\\\multicolumn{2}{c}{\multirow{2}{*}{\scalebox{2}{2}}}&\ddots&\\ &&&3\end{array}\right)$, $\Sigma_1=I_{50}$. $\mu_0=(1,\dots,1)^{\mathrm T}$, $\mu_1=(0,\dots,0)^{\mathrm T}$.
+
+There are $100$ test samples in class 0 and $100$ test samples in class 1. Repeat $m=100$ times for average test error. 
+
+Generate training data:
+```{r}
+df_S2=NULL
+```
+```{r}
+p=50
+set.seed(501)
+x=list()
+m=100
+n=300
+for(i in 1:m){
+  x[[i]]=rbind(datagen(n=n,p=p,rho=2/3)*sqrt(3)+matrix(rep(1,n*p),nrow=n),datagen(n=n,p=p))
+}
+y=c(rep(0,n),rep(1,n))
+```
+
+Generate test data:
+```{r}
+set.seed(601)
+xnew=list()
+for(i in 1:m){
+  xnew[[i]]=rbind(datagen(n=100,p=p,rho=2/3)*sqrt(3)+matrix(rep(1,100*p),nrow=100),datagen(n=100,p=p))
+}
+ynew=c(rep(0,100),rep(1,100))
+```
+
+Our method:
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  ypred=QDAp(x[[i]],as.factor(y),xnew[[i]],lambda=0,iter = 1)$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S2=rbind(df_S2,data.frame(Methods="Our method",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+LDA:
+```{r warning=FALSE}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  fit.lda<-lda(x[[i]],as.factor(y))
+  ypred=predict(fit.lda,xnew[[i]])$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S2=rbind(df_S2,data.frame(Methods="LDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Direct Sparse Discriminant Analysis (QING MAI, HUI ZOU, MING YUAN):
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  pe[i]=dsda(as.matrix(x[[i]]),y,as.matrix(xnew[[i]]),ynew)$error
+}
+df_S2=rbind(df_S2,data.frame(Methods="SLDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+QDA:  
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  fit.qda=qda(x[[i]],as.factor(y))
+  ypred=predict(fit.qda,xnew[[i]])$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S2=rbind(df_S2,data.frame(Methods="QDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Sparse quadratic classification rules via linear dimension reduction (Irina Gaynanova and Tianying Wang):
+```{r results='hide'}
+y[which(y==0)]=2
+ynew[which(ynew==0)]=2
+pe=rep(0,m)
+for(i in 1:m){
+  pe[i]=apply_DAP(x[[i]],y,xnew[[i]],ynew)$error
+}
+df_S2=rbind(df_S2,data.frame(Methods="SQDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+RDA:
+```{r results='hide'}
+y[which(y==0)]=2
+ynew[which(ynew==0)]=2
+pe=rep(0,m)
+for(i in 1:m){
+  fit.rda<-rda(t(x[[i]]),as.factor(y))
+  err<-rda.cv(fit.rda,t(x[[i]]),as.factor(y))$cv.err
+  par<-arrayInd(which.min(err),dim(err))
+  fit.rda<-rda(t(x[[i]]),as.factor(y),alpha = seq(0, 0.99, len=10)[par[1]],delta = seq(0, 3, len=10)[par[2]])
+  ypred=predict(fit.rda,t(x[[i]]),as.factor(y),t(xnew[[i]]),type="class")
+  pe[i]=mean(ynew!=ypred)
+}
+df_S2=rbind(df_S2,data.frame(Methods="RDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Population Bayesian rule:
+```{r}
+df_S2=rbind(df_S2,data.frame(Methods="Population",n=n,Prediction.Error=as.numeric(MisRate(1,sqrt(50),0,101,1)),ci=0))
+```
+
+Oracle:
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  ypred=as.numeric((-0.5*log(101)-0.5*(xnew[[i]]%*%rep(1,50)/sqrt(50)-sqrt(50))^2/101) < (-0.5*(xnew[[i]]%*%rep(1,50)/sqrt(50))^2))
+  pe[i]=mean(ynew!=ypred)
+}
+df_S2=rbind(df_S2,data.frame(Methods="Oracle",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Plot CI:
+```{r}
+pdf("Simulation2.pdf")
+pd <- position_dodge(8)
+ggplot(df_S2, aes(x=n, y=Prediction.Error, colour=Methods)) + 
+    geom_errorbar(aes(ymin=Prediction.Error-ci, ymax=Prediction.Error+ci), width=10, position=pd) +
+    geom_line(position=pd) +
+    geom_point(position=pd)
+dev.off()
+```
+
+### 3.
+
+Simulation 3: Dimension $p=50$. Only one direction is useful for classification, and LDA assumption is satisfied. That direction can be set as $(3,\dots,3)^{\mathrm T}$.
+
+$\Sigma_0=\Sigma_1=\left(\begin{array}{cccc} 3 & &\multicolumn{2}{c}{\multirow{2}{*}{\scalebox{2}{2}}}\\&3&&\\\multicolumn{2}{c}{\multirow{2}{*}{\scalebox{2}{2}}}&\ddots&\\ &&&3\end{array}\right)$. $\mu_0=(3,\dots,3)^{\mathrm T}$, $\mu_1=(0,\dots,0)^{\mathrm T}$.
+
+There are $100$ test samples in class 0 and $100$ test samples in class 1. Repeat $m=100$ times for average test error. 
+
+Generate training data:
+```{r}
+df_S3=NULL
+```
+```{r}
+p=50
+set.seed(801)
+drct=rep(1,p)/3
+drct[sample(50,25)]=-1/3
+x=list()
+n=300
+m=100
+A=matrix(rep(2,p^2),nrow = p)+diag(p)
+for(i in 1:m){
+  x[[i]]=rbind(datagen(n=n,p=p,rho=2/3)*sqrt(3)+matrix(rep(drct,n),nrow = n,byrow = TRUE),datagen(n=n,p=p,rho=2/3)*sqrt(3))
+}
+y=c(rep(0,n),rep(1,n))
+```
+
+Generate test data:
+```{r}
+set.seed(901)
+xnew=list()
+for(i in 1:m){
+  xnew[[i]]=rbind(datagen(n=100,p=p,rho=2/3)*sqrt(3)+matrix(rep(drct,100),nrow = 100,byrow = TRUE),datagen(n=100,p=p,rho=2/3)*sqrt(3))
+}
+ynew=c(rep(0,100),rep(1,100))
+```
+
+Our method:
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  ypred=QDAp(x[[i]],as.factor(y),xnew[[i]],lambda=0,iter = 1)$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S3=rbind(df_S3,data.frame(Methods="Our method",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+LDA:
+```{r warning=FALSE}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  fit.lda<-lda(x[[i]],as.factor(y))
+  ypred=predict(fit.lda,xnew[[i]])$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S3=rbind(df_S3,data.frame(Methods="LDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Direct Sparse Discriminant Analysis (QING MAI, HUI ZOU, MING YUAN):
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  pe[i]=dsda(as.matrix(x[[i]]),y,as.matrix(xnew[[i]]),ynew)$error
+}
+df_S3=rbind(df_S3,data.frame(Methods="SLDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+QDA:  
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  fit.qda=qda(x[[i]],as.factor(y))
+  ypred=predict(fit.qda,xnew[[i]])$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S3=rbind(df_S3,data.frame(Methods="QDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Sparse quadratic classification rules via linear dimension reduction (Irina Gaynanova and Tianying Wang):
+```{r results='hide'}
+y[which(y==0)]=2
+ynew[which(ynew==0)]=2
+pe=rep(0,m)
+for(i in 1:m){
+  pe[i]=apply_DAP(x[[i]],y,xnew[[i]],ynew)$error
+}
+df_S3=rbind(df_S3,data.frame(Methods="SQDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+RDA:
+```{r results='hide'}
+y[which(y==0)]=2
+ynew[which(ynew==0)]=2
+pe=rep(0,m)
+for(i in 1:m){
+  fit.rda<-rda(t(x[[i]]),as.factor(y))
+  err<-rda.cv(fit.rda,t(x[[i]]),as.factor(y))$cv.err
+  par<-arrayInd(which.min(err),dim(err))
+  fit.rda<-rda(t(x[[i]]),as.factor(y),alpha = seq(0, 0.99, len=10)[par[1]],delta = seq(0, 3, len=10)[par[2]])
+  ypred=predict(fit.rda,t(x[[i]]),as.factor(y),t(xnew[[i]]),type="class")
+  pe[i]=mean(ynew!=ypred)
+}
+df_S3=rbind(df_S3,data.frame(Methods="RDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Population Bayesian rule:
+```{r}
+ldad=solve(A)%*%drct
+v=t(ldad)%*%A%*%ldad
+mn=t(drct)%*%ldad
+df_S3=rbind(df_S3,data.frame(Methods="Population",n=n,Prediction.Error=as.numeric(MisRate(1,mn,0,v,v)),ci=0))
+```
+
+Oracle:
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  ypred=as.numeric((xnew[[i]]%*%ldad)<rep(mn/2,100))
+  pe[i]=mean(ynew!=ypred)
+}
+df_S3=rbind(df_S3,data.frame(Methods="Oracle",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Plot CI:
+```{r}
+pdf("Simulation3random.pdf")
+pd <- position_dodge(8)
+ggplot(df_S3random, aes(x=n, y=Prediction.Error, colour=Methods)) + 
+    geom_errorbar(aes(ymin=Prediction.Error-ci, ymax=Prediction.Error+ci), width=10, position=pd) +
+    geom_line(position=pd) +
+    geom_point(position=pd)
+dev.off()
+```
+
+### 4.
+
+Simulation 4: Dimension $p=50$. Only one direction is useful for classification, and LDA assumption is satisfied.
+
+$\Sigma_0=\Sigma_1=B^{\mathrm T}B+{\mathrm{diag}}(v)$, where $p\times p$ matrix $B$ is generated from $\mathcal N (0,1)$ independently and $p\times 1$ vector $v$ from $\mathcal U (0,1)$. $\mu_0=(1,\dots,1)^{\mathrm T}$, $\mu_1=(0,\dots,0)^{\mathrm T}$.
+
+There are $100$ test samples in class 0 and $100$ test samples in class 1. Repeat $m=100$ times for average test error. 
+
+Generate training data:
+```{r}
+df_S4=NULL
+```
+```{r}
+p=50
+drct=rep(1,p)
+set.seed(1201)
+x=list()
+n=300
+m=100
+B=matrix(rnorm(n=p*p),nrow = p)
+A=t(B)%*%B+diag(runif(n=p))
+for(i in 1:m){
+  x[[i]]=rbind(mvrnorm(n=n,mu=drct,Sigma=A),mvrnorm(n=n,mu=rep(0,p),Sigma = A))
+}
+y=c(rep(0,n),rep(1,n))
+```
+
+Generate test data:
+```{r}
+set.seed(1301)
+xnew=list()
+for(i in 1:m){
+  xnew[[i]]=rbind(mvrnorm(n=100,mu=drct,Sigma=A),mvrnorm(n=100,mu=rep(0,p),Sigma = A))
+}
+ynew=c(rep(0,100),rep(1,100))
+```
+
+Our method:
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  ypred=QDAp(x[[i]],as.factor(y),xnew[[i]],lambda=0,iter = 1)$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S4=rbind(df_S4,data.frame(Methods="Our method",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+LDA:
+```{r warning=FALSE}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  fit.lda<-lda(x[[i]],as.factor(y))
+  ypred=predict(fit.lda,xnew[[i]])$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S4=rbind(df_S4,data.frame(Methods="LDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Direct Sparse Discriminant Analysis (QING MAI, HUI ZOU, MING YUAN):
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  pe[i]=dsda(as.matrix(x[[i]]),y,as.matrix(xnew[[i]]),ynew)$error
+}
+df_S4=rbind(df_S4,data.frame(Methods="SLDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+QDA:  
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  fit.qda=qda(x[[i]],as.factor(y))
+  ypred=predict(fit.qda,xnew[[i]])$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S4=rbind(df_S4,data.frame(Methods="QDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Sparse quadratic classification rules via linear dimension reduction (Irina Gaynanova and Tianying Wang):
+```{r results='hide'}
+y[which(y==0)]=2
+ynew[which(ynew==0)]=2
+pe=rep(0,m)
+for(i in 1:m){
+  pe[i]=apply_DAP(x[[i]],y,xnew[[i]],ynew)$error
+}
+df_S4=rbind(df_S4,data.frame(Methods="SQDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+RDA:
+```{r results='hide'}
+y[which(y==0)]=2
+ynew[which(ynew==0)]=2
+pe=rep(0,m)
+for(i in 1:m){
+  fit.rda<-rda(t(x[[i]]),as.factor(y))
+  err<-rda.cv(fit.rda,t(x[[i]]),as.factor(y))$cv.err
+  par<-arrayInd(which.min(err),dim(err))
+  fit.rda<-rda(t(x[[i]]),as.factor(y),alpha = seq(0, 0.99, len=10)[par[1]],delta = seq(0, 3, len=10)[par[2]])
+  ypred=predict(fit.rda,t(x[[i]]),as.factor(y),t(xnew[[i]]),type="class")
+  pe[i]=mean(ynew!=ypred)
+}
+df_S4=rbind(df_S4,data.frame(Methods="RDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Population Bayesian rule:
+```{r}
+ldad=solve(A)%*%drct
+v=t(ldad)%*%A%*%ldad
+mn=t(drct)%*%ldad
+df_S4=rbind(df_S4,data.frame(Methods="Population",n=n,Prediction.Error=as.numeric(MisRate(1,mn,0,v,v)),ci=0))
+```
+
+Oracle:
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  ypred=as.numeric((xnew[[i]]%*%ldad)<rep(mn/2,100))
+  pe[i]=mean(ynew!=ypred)
+}
+df_S4=rbind(df_S4,data.frame(Methods="Oracle",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Plot CI:
+```{r}
+pdf("Simulation4.pdf")
+pd <- position_dodge(8)
+ggplot(df_S4, aes(x=n, y=Prediction.Error, colour=Methods)) + 
+    geom_errorbar(aes(ymin=Prediction.Error-ci, ymax=Prediction.Error+ci), width=10, position=pd) +
+    geom_line(position=pd) +
+    geom_point(position=pd)
+dev.off()
+```
+
+### 5.
+
+Simulation 5: Dimension $p=50$. More than one direction is useful for classification.
+
+$\Sigma_0=AR(1)$ with $\sigma=1$ and $\rho=0.5$, $\Sigma_1=I_{50}$. $\mu_0=(1,\dots,1)^{\mathrm T}$, $\mu_1=(0,\dots,0)^{\mathrm T}$.
+
+There are $100$ test samples in class 0 and $100$ test samples in class 1. Repeat $m=100$ times for average test error. 
+
+Generate training data:
+```{r}
+df_S5=NULL
+```
+```{r}
+p=50
+set.seed(1001)
+x=list()
+m=100
+n=300
+for(i in 1:m){
+  x[[i]]=rbind(datagen(n=n,p=p,rho=0.5,type=2)+matrix(rep(1,n*p),nrow=n),datagen(n=n,p=p))
+}
+y=c(rep(0,n),rep(1,n))
+```
+
+Generate test data:
+```{r}
+set.seed(1101)
+xnew=list()
+for(i in 1:m){
+  xnew[[i]]=rbind(datagen(n=100,p=p,rho=0.5,type=2)+matrix(rep(1,100*p),nrow=100),datagen(n=100,p=p))
+}
+ynew=c(rep(0,100),rep(1,100))
+```
+
+Our method:
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  ypred=QDAp(x[[i]],as.factor(y),xnew[[i]],lambda=0,iter = 1)$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S5=rbind(df_S5,data.frame(Methods="Our method",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+LDA:
+```{r warning=FALSE}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  fit.lda<-lda(x[[i]],as.factor(y))
+  ypred=predict(fit.lda,xnew[[i]])$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S5=rbind(df_S5,data.frame(Methods="LDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Direct Sparse Discriminant Analysis (QING MAI, HUI ZOU, MING YUAN):
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  pe[i]=dsda(as.matrix(x[[i]]),y,as.matrix(xnew[[i]]),ynew)$error
+}
+df_S5=rbind(df_S5,data.frame(Methods="SLDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+QDA:  
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+pe=rep(0,m)
+for(i in 1:m){
+  fit.qda=qda(x[[i]],as.factor(y))
+  ypred=predict(fit.qda,xnew[[i]])$class
+  pe[i]=mean(ynew!=ypred)
+}
+df_S5=rbind(df_S5,data.frame(Methods="QDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Sparse quadratic classification rules via linear dimension reduction (Irina Gaynanova and Tianying Wang):
+```{r results='hide'}
+y[which(y==0)]=2
+ynew[which(ynew==0)]=2
+pe=rep(0,m)
+for(i in 1:m){
+  pe[i]=apply_DAP(x[[i]],y,xnew[[i]],ynew)$error
+}
+df_S5=rbind(df_S5,data.frame(Methods="SQDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+RDA:
+```{r results='hide'}
+y[which(y==0)]=2
+ynew[which(ynew==0)]=2
+pe=rep(0,m)
+for(i in 1:m){
+  fit.rda<-rda(t(x[[i]]),as.factor(y))
+  err<-rda.cv(fit.rda,t(x[[i]]),as.factor(y))$cv.err
+  par<-arrayInd(which.min(err),dim(err))
+  fit.rda<-rda(t(x[[i]]),as.factor(y),alpha = seq(0, 0.99, len=10)[par[1]],delta = seq(0, 3, len=10)[par[2]])
+  ypred=predict(fit.rda,t(x[[i]]),as.factor(y),t(xnew[[i]]),type="class")
+  pe[i]=mean(ynew!=ypred)
+}
+df_S5=rbind(df_S5,data.frame(Methods="RDA",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Population Bayesian rule:
+```{r}
+df_S5=rbind(df_S5,data.frame(Methods="Population",n=n,Prediction.Error=as.numeric(MisRate(1,sqrt(50),0,101,1)),ci=0))
+```
+
+Oracle:
+```{r}
+y[which(y==2)]=0
+ynew[which(ynew==2)]=0
+times <- 1:p
+rho <- 0.5
+sigma <- 1
+H <- abs(outer(times, times, "-"))
+A <- sigma * rho^H
+p_A <- nrow(A)
+A[cbind(1:p_A, 1:p_A)] <- A[cbind(1:p_A, 1:p_A)] * sigma
+pe=rep(0,m)
+for(i in 1:m){
+  for(j in 1:200){
+    ypred[j]=as.numeric((-0.5*log(det(A))-0.5*(xnew[[i]][j,]-rep(1,p))%*%solve(A)%*%(xnew[[i]][j,]-rep(1,p)) < (-0.5*(sum(xnew[[i]][j,]^2)))))
+    pe[i]=mean(ynew!=ypred)
+  }
+}
+df_S5=rbind(df_S5,data.frame(Methods="Oracle",n=n,Prediction.Error=mean(pe),ci=sd(pe)*qt(0.975,m-1)/sqrt(m)))
+```
+
+Plot CI:
+```{r}
+pdf("Simulation5.pdf")
+pd <- position_dodge(8)
+ggplot(df_S5, aes(x=n, y=Prediction.Error, colour=Methods)) + 
+    geom_errorbar(aes(ymin=Prediction.Error-ci, ymax=Prediction.Error+ci), width=10, position=pd) +
+    geom_line(position=pd) +
+    geom_point(position=pd)
+dev.off()
+```
