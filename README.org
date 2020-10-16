@@ -1,7 +1,6 @@
 * QDA by Projection project -- Numerical Analysis
 This is the numerical analysis part of the *QDA by Projection*
-project.
-There are two literate programming scripts:
+project. There are two literate programming scripts:
 - [[file:simulation.org]]
 - [[file:real_data.org]]
 In order to run those, you need to install the following *R* packages:
@@ -14,7 +13,9 @@ files. Just use ~C-c C-c~ within each ~#+begin_src~ blocks and
 ~#+call~ block calls (these are called library of babel calls
 technically).
 
-Run all the code blocks (except the ones in the [[file:~/Desktop/QDA by Projection/Numerical_Analysis/simulation.org::*Various Code Blocks][appendix]]) in
-sequential order, and you will get two .RData files and a bunch of
-images, which summarizes the result of our numerical analysis, under
-~./out~.
+Run all the code blocks (except the ones in [[file:~/Desktop/QDA by Projection/Numerical_Analysis/simulation.org::*Various Code Blocks][appendix]]) in sequential
+order, and you will get two .RData files and a bunch of images, which
+summarizes the result of our numerical analysis, under ~./out~. This
+will also insert table summaries in the original org files. Be
+informed that calls to ~model evaluation~ blocks can take a long
+time. Just wait for it to finish.
