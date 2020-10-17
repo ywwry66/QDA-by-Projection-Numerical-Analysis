@@ -13,9 +13,9 @@ files. Just use ~C-c C-c~ within each ~#+begin_src~ blocks and
 ~#+call~ block calls (these are called library of babel calls
 technically).
 
-Run all the code blocks (except the ones in [[file:simulation.org::*Various Code Blocks][appendix]]) in sequential
-order, and you will get two .RData files and a bunch of images, which
-summarizes the result of our numerical analysis, under ~./out~. This
-will also insert table summaries in the original org files. Be
-informed that calls to ~model evaluation~ blocks can take a long
-time. Just wait for it to finish.
+Run all the code blocks (except the ones in Section [[file:simulation.org::*Various Code Blocks][Various Code
+Blocks]]) in sequential order, and you will get two .RData files and a
+bunch of images, which summarize the result of our numerical
+analysis, under ~./out~. This will also insert table summaries in the
+original org files. Be informed that calls to ~model evaluation~
+blocks can take a long time. Just wait for it to finish.
