@@ -2,7 +2,6 @@
 #+author: Ruiyang Wu
 
 #+property: header-args :session *R:QDA by Projection* :results output silent :eval no-export
-#+latex_header: \usepackage{booktabs}
 
 #+name: r initialization
 #+begin_src R :exports none
@@ -48,7 +47,7 @@ test error.
 #+call: models evaluation(name="sl1")
 
 #+call: data summary[:results value replace :colnames yes](name="sl1")
-#+attr_latex: :booktabs t
+
 #+RESULTS:
 |   n | DAP          | DSDA         | LDA          | Oracle       | QDA          | QDAP         | RDA          |
 |-----+--------------+--------------+--------------+--------------+--------------+--------------+--------------|
@@ -84,7 +83,7 @@ concerning rda.
 #+call: models evaluation(name="sl2")
 
 #+call: data summary[:results value replace :colnames yes](name="sl2")
-#+attr_latex: :booktabs t
+
 #+RESULTS:
 |   n | DAP          | DSDA         | LDA          | Oracle      | QDA          | QDAP         | RDA          |
 |-----+--------------+--------------+--------------+-------------+--------------+--------------+--------------|
@@ -114,7 +113,7 @@ concerning rda.
 #+call: models evaluation(name="sl3")
 
 #+call: data summary[:results value replace :colnames yes](name="sl3")
-#+attr_latex: :booktabs t
+
 #+RESULTS:
 |   n | DAP          | DSDA         | LDA          | Oracle      | QDA          | QDAP         | RDA          |
 |-----+--------------+--------------+--------------+-------------+--------------+--------------+--------------|
@@ -151,7 +150,7 @@ test error.
 #+call: models evaluation(name="sl4")
 
 #+call: data summary[:results value replace :colnames yes](name="sl4")
-#+attr_latex: :booktabs t
+
 #+RESULTS:
 |   n | DAP          | DSDA         | LDA          | Oracle       | QDA          | QDAP         | RDA          |
 |-----+--------------+--------------+--------------+--------------+--------------+--------------+--------------|
@@ -183,7 +182,7 @@ test error.
 #+call: models evaluation(name="sl5")
 
 #+call: data summary[:results value replace :colnames yes](name="sl5")
-#+attr_latex: :booktabs t
+
 #+RESULTS:
 |   n | DAP          | DSDA         | LDA          | Oracle      | QDA          | QDAP         | RDA          |
 |-----+--------------+--------------+--------------+-------------+--------------+--------------+--------------|
