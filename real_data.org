@@ -206,6 +206,32 @@ $p=13$, $n=303$. Repeat $m=100,300$ times for average test error.
 #+name: data summary
 #+begin_src R
   obj_name <- paste0("pred_err_", name)
-  plot_data_rd(get(obj_name), per = per,
-            out = paste0("out/", name, ".pdf"))
+  out <- paste0("out/", name, ".pdf")
+  len_per <- length(per)
+  data_summarized <- NULL
+  for (i in 1:len_per) {
+    data_summarized <-
+      rbind(data_summarized,
+            data.frame(summary_se(get(obj_name)[[i]]), pct. = per[i]))
+  }
+  pdf(out)
+  pd <- position_dodge(0.01)
+  plot <- ggplot(data_summarized, aes(x = pct., y = prediction.error,
+                                      colour = method)) +
+    geom_errorbar(aes(ymin = prediction.error - ci.95,
+                      ymax = prediction.error + ci.95),
+                  width = .02, position = pd) +
+    geom_line(position = pd) +
+    geom_point(position = pd)
+  print(plot)
+  dev.off()
+  data_summarized %>%
+    dplyr::select(- ci.95) %>%
+    mutate(prediction.error
+           = format(round(prediction.error * 100, 2), nsmall = 2)) %>%
+    mutate(standard.error = paste0("(", format(round(standard.error * 100, 2),
+                                               nsmall = 2), ")")) %>%
+    unite(col = prediction.error, prediction.error, standard.error, sep = " ") %>%
+    spread(key = method, value = prediction.error)
 #+end_src
+

@@ -247,9 +247,10 @@ test error.
   dev.off()
   data_summarized %>%
     dplyr::select(- ci.95) %>%
-    mutate(prediction.error = format(round(prediction.error*100, 2), nsmall = 2)) %>%
-    mutate(standard.error =
-             paste0("(", format(round(standard.error*100, 2), nsmall = 2), ")")) %>%
+    mutate(prediction.error
+           = format(round(prediction.error * 100, 2), nsmall = 2)) %>%
+    mutate(standard.error = paste0("(", format(round(standard.error * 100, 2),
+                                               nsmall = 2), ")")) %>%
     unite(col = prediction.error, prediction.error, standard.error, sep = " ") %>%
     spread(key = method, value = prediction.error)
 #+end_src
