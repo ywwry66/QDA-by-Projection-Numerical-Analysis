@@ -235,3 +235,8 @@ $p=13$, $n=303$. Repeat $m=100,300$ times for average test error.
     spread(key = method, value = prediction.error)
 #+end_src
 
+* COMMENT Local Variables
+
+# Local Variables:
+# org-confirm-babel-evaluate: nil
+# End:
