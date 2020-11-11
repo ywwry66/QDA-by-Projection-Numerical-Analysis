@@ -19,3 +19,8 @@ bunch of images, which summarize the result of our numerical
 analysis, under ~./out~. This will also insert table summaries in the
 original org files. Be informed that calls to ~model evaluation~
 blocks can take a long time. Just wait for it to finish.
+
+Also note that the parallel computing code may not be compatible with
+Windows machines, because it uses doSNOW instead of doMC, which
+requires the manual passing of objects and variables. It should run
+with Linux, macOS and other Unix-like operating systems.
