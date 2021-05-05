@@ -22,7 +22,7 @@
 
 * Simulation 1
 Dimension \(p=50\). Only one direction is useful for classification,
-and LAD assumption is satisfied.
+and LDA assumption is satisfied.
 
 There are \(n_0\) training samples and 100 test samples in class 0,
 \(n_1\) training samples and 100 test samples in class 1, where
