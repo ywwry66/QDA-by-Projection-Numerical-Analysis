@@ -71,7 +71,7 @@ $p=36$, $n=87$. Repeat $m=100$ times for average test error.
 
 #+call: data split()
 
-#+call: models evaluation(qda="FALSE",name="flowmeter")
+#+call: models evaluation(qda=0,name="flowmeter")
 
 #+call: data summary[:results value replace :colnames yes](name="flowmeter")
 
@@ -136,7 +136,7 @@ $p=13$, $n=303$. Repeat $m=300$ times for average test error.
 
 #+call: data split()
 
-#+call: models evaluation(qda="FALSE",name="segment_data")
+#+call: models evaluation(qda=0,name="segment_data")
 
 #+call: data summary[:results value replace :colnames yes](name="segment_data")
 
@@ -168,7 +168,7 @@ $p=13$, $n=303$. Repeat $m=300$ times for average test error.
 
 #+call: data split()
 
-#+call: models evaluation(name="satellite",test="TRUE")
+#+call: models evaluation(name="satellite")
 
 #+call: data summary[:results value replace :colnames yes](name="satellite")
 
@@ -194,24 +194,42 @@ $p=13$, $n=303$. Repeat $m=300$ times for average test error.
 #+end_src
 ** Models Evaluation Code
 #+name: models evaluation
-#+begin_src R :var lda="TRUE" qda="TRUE" dsda="TRUE" sqda="TRUE" rda="TRUE" test="FALSE"
+#+begin_src R :var name="foo" lda=1 qda=1 dsda=1 sqda=1 rda=1 test=0 parallel=1
   len_per <- length(per)
   pred_err <- vector("list", len_per)
-  for (i in 1:len_per) {
-    pred_err[[i]] <- foreach(j = 1:m, .combine = rbind,
-                             .options.RNG = seed) %dorng%
-      data_analysis(x = x[id[[i]][[j]], ], y = y[id[[i]][[j]]],
-                    xnew = x[-id[[i]][[j]], ], ynew = y[-id[[i]][[j]]],
-                    lda = lda, qda = qda, dsda = dsda, sqda = sqda, rda = rda)
+  if (parallel == TRUE) {
+    Sys.setenv(OMP_NUM_THREADS = 1)
+    for (i in 1:len_per) {
+      pred_err[[i]] <- foreach(j = 1:m, .combine = rbind,
+                               .options.RNG = seed) %dorng%
+        data_analysis(x = x[id[[i]][[j]], ], y = y[id[[i]][[j]]],
+                      xnew = x[-id[[i]][[j]], ], ynew = y[-id[[i]][[j]]],
+                      lda = lda, qda = qda, dsda = dsda, sqda = sqda, rda = rda)
+    }
+    Sys.setenv(OMP_NUM_THREADS = 4)
+  } else {
+    for (i in 1:len_per) {
+      pred_err[[i]] <-
+        data_analysis(x = x[id[[i]][[1]], ], y = y[id[[i]][[1]]],
+                      xnew = x[-id[[i]][[1]], ], ynew = y[-id[[i]][[1]]],
+                      lda = lda, qda = qda, dsda = dsda, sqda = sqda, rda = rda)
+      for (j in 2:m) {
+        pred_err[[i]] <-
+          rbind(pred_err[[i]],
+                data_analysis(x = x[id[[i]][[j]], ], y = y[id[[i]][[j]]],
+                              xnew = x[-id[[i]][[j]], ], ynew = y[-id[[i]][[j]]],
+                              lda = lda, qda = qda, dsda = dsda, sqda = sqda, rda = rda))
+      }
+    }
   }
   obj_name <- paste0("pred_err_", name)
   assign(obj_name, pred_err)
-  if (test == "FALSE")
+  if (test == FALSE)
     resave(list = obj_name, file = "out/real_data_summary.RData")
 #+end_src
 ** Data Summary Code
 #+name: data summary
-#+begin_src R
+#+begin_src R :var name="foo"
   obj_name <- paste0("pred_err_", name)
   out <- paste0("out/", name, ".pdf")
   len_per <- length(per)
