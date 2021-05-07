@@ -13,7 +13,7 @@ data_analysis <- function(x, y, xnew, ynew, lda=TRUE, qda=TRUE,
     ## Our method
     y[which(y == 2)] <- 0
     ynew[which(ynew == 2)] <- 0
-    ypred <- qdap(x, as.factor(y), xnew, lambda = 0, iter = 1, optim = "codesc")$class
+    ypred <- qdap(x, as.factor(y), xnew, lambda = 0, iter = 1)$class
     pe_qdap <- mean(ynew != ypred)
     out <- data.frame("QDAP" = pe_qdap)
     ## LDA
