@@ -60,7 +60,7 @@ test error.
 * Simulation 2
 # I have to change seed to 2019 for this one, or it will throw an error
 # saying "error code 1 from Lapack routine 'dgesdd'". It turns out to be
-# concerning rda.
+# concerning rda. (no longer true)
 
 #+name: simulation 2 setup
 #+begin_src R
@@ -125,7 +125,7 @@ test error.
 
 * Simulation 4
 Dimension \(p=50\). Only one direction is useful for classification,
-and LAD assumption is extremely not satisfied.
+and LDA assumption is extremely not satisfied.
 
 There are \(n_0\) training samples and 100 test samples in class 0,
 \(n_1\) training samples and 100 test samples in class 1, where
@@ -161,20 +161,20 @@ test error.
 | 300 | 50.09 (0.16) | 23.03 (0.13) | 47.73 (0.32) | 50.04 (0.15) | 19.90 (1.15) | 11.18 (0.10) | 9.96 (0.09)  |
 
 * Simulation 5
+Three directions are useful for classification.
 
 #+name: simulation 5 setup
 #+begin_src R
   seed <- 2020
   p <- 50
-  m <- 200
+  m <- 100
   ntest <- 500
   n <- c(100, 150, 200, 250, 300)
   mu0 <- rep(0, p)
-  mu1 <- rep(1 / 3, p)
-  sigma0 <- diag(p)
-  temp <- abs(outer(1:p, 1:p, "-"))
-  sigma1 <- 0.3^temp
-  rm(temp)
+  set.seed(seed)
+  mu1 <- rnorm(p) / 7
+  sigma0 <- diag(c(10, rep(1, p - 1)))
+  sigma1 <- diag(p) + matrix(rep(2, p^2), nrow = p)
 #+end_src
 
 #+call: data generation()
@@ -184,13 +184,13 @@ test error.
 #+call: data summary[:results value replace :colnames yes](name="sl5")
 
 #+RESULTS:
-|   n | LDA          | QDA          | RDA          | DSDA         | DAP          | QDAP         | Oracle      |
-|-----+--------------+--------------+--------------+--------------+--------------+--------------+-------------|
-| 100 | 21.90 (0.13) | 29.47 (0.15) | 17.47 (0.10) | 21.91 (0.13) | 23.08 (0.17) | 21.71 (0.13) | 7.30 (0.05) |
-| 150 | 20.04 (0.12) | 23.99 (0.12) | 16.96 (0.10) | 20.23 (0.13) | 21.01 (0.13) | 19.77 (0.11) | 7.37 (0.06) |
-| 200 | 18.76 (0.10) | 20.73 (0.12) | 16.49 (0.09) | 19.04 (0.11) | 19.61 (0.11) | 18.47 (0.10) | 7.35 (0.06) |
-| 250 | 18.08 (0.09) | 18.57 (0.10) | 16.31 (0.08) | 18.34 (0.10) | 18.88 (0.10) | 17.93 (0.09) | 7.33 (0.06) |
-| 300 | 17.60 (0.09) | 16.66 (0.09) | 16.11 (0.09) | 17.78 (0.10) | 18.23 (0.10) | 17.38 (0.09) | 7.34 (0.06) |
+|   n | DAP          | DSDA         | LDA          | Oracle      | QDA          | QDAP         | RDA          |
+|-----+--------------+--------------+--------------+-------------+--------------+--------------+--------------|
+| 100 | 22.93 (0.61) | 35.73 (0.25) | 35.63 (0.22) | 7.28 (0.08) | 22.34 (0.19) | 19.72 (0.25) | 35.44 (0.27) |
+| 150 | 20.29 (0.65) | 34.68 (0.25) | 34.48 (0.22) | 7.26 (0.08) | 18.65 (0.15) | 14.04 (0.17) | 34.25 (0.24) |
+| 200 | 18.64 (0.65) | 32.99 (0.20) | 32.79 (0.17) | 7.12 (0.08) | 16.77 (0.13) | 12.54 (0.12) | 32.64 (0.21) |
+| 250 | 18.96 (0.62) | 32.27 (0.15) | 32.44 (0.16) | 7.39 (0.08) | 15.53 (0.13) | 11.89 (0.11) | 32.18 (0.17) |
+| 300 | 19.54 (0.70) | 31.86 (0.16) | 31.79 (0.14) | 7.21 (0.07) | 14.65 (0.11) | 11.37 (0.10) | 31.58 (0.15) |
 
 * Various Code Blocks
 :PROPERTIES:
