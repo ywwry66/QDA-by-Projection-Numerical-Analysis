@@ -71,7 +71,7 @@ data_analysis <- function(x, y, xnew, ynew, qdap=TRUE, lda=TRUE, qda=TRUE,
         fit_rda <- rda(t(x), as.factor(y),
                        alpha = seq(0, 0.99, len = 10)[par[1]],
                        delta = seq(0, 3, len = 10)[par[2]])
-        ypred <- predict(fit_rda, t(x), as.factor(y), t(xnew), type = "class")
+        ypred <- predict.rda(fit_rda, t(x), as.factor(y), t(xnew), type = "class")
         pe_rda <- mean(ynew != ypred)
         out <- c(out, list("RDA" = pe_rda))
     }
