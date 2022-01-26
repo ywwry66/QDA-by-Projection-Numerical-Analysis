@@ -14,7 +14,7 @@
   source("R/data_analysis_wrapper.R")
   source("R/data_summary.R")
   source("R/resave.R")
-  num_cores <- detectCores()
+  num_cores <- 4
   registerDoParallel(cores = num_cores)
   if (file.exists("out/simulation_summary.RData"))
     load("out/simulation_summary.RData")
