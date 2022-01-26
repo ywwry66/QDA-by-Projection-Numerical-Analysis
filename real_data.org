@@ -194,7 +194,7 @@ $p=13$, $n=303$. Repeat $m=300$ times for average test error.
 #+end_src
 ** Models Evaluation Code
 #+name: models evaluation
-#+begin_src R :var name="foo" lda=1 qda=1 dsda=1 sqda=1 rda=1 test=0 parallel=1
+#+begin_src R :var name="foo" qdap=1 lda=1 qda=1 dsda=1 sqda=1 rda=1 test=0 parallel=1
   len_per <- length(per)
   pred_err <- vector("list", len_per)
   if (parallel == TRUE) {
@@ -204,21 +204,19 @@ $p=13$, $n=303$. Repeat $m=300$ times for average test error.
                                .options.RNG = seed) %dorng%
         data_analysis(x = x[id[[i]][[j]], ], y = y[id[[i]][[j]]],
                       xnew = x[-id[[i]][[j]], ], ynew = y[-id[[i]][[j]]],
-                      lda = lda, qda = qda, dsda = dsda, sqda = sqda, rda = rda)
+                      qdap = qdap, lda = lda, qda = qda, dsda = dsda,
+                      sqda = sqda, rda = rda)
     }
     Sys.setenv(OMP_NUM_THREADS = 4)
   } else {
     for (i in 1:len_per) {
-      pred_err[[i]] <-
-        data_analysis(x = x[id[[i]][[1]], ], y = y[id[[i]][[1]]],
-                      xnew = x[-id[[i]][[1]], ], ynew = y[-id[[i]][[1]]],
-                      lda = lda, qda = qda, dsda = dsda, sqda = sqda, rda = rda)
-      for (j in 2:m) {
+      for (j in 1:m) {
         pred_err[[i]] <-
           rbind(pred_err[[i]],
                 data_analysis(x = x[id[[i]][[j]], ], y = y[id[[i]][[j]]],
                               xnew = x[-id[[i]][[j]], ], ynew = y[-id[[i]][[j]]],
-                              lda = lda, qda = qda, dsda = dsda, sqda = sqda, rda = rda))
+                              qdap = qdap, lda = lda, qda = qda, dsda = dsda,
+                              sqda = sqda, rda = rda))
       }
     }
   }

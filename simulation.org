@@ -206,7 +206,7 @@ Three directions are useful for classification.
 #+end_src
 ** Models Evaluation Code
 #+name: models evaluation
-#+begin_src R :var name="foo" lda=1 qda=1 dsda=1 sqda=1 rda=1 test=0 parallel=1
+#+begin_src R :var name="foo" qdap=1 lda=1 qda=1 dsda=1 sqda=1 rda=1 test=0 parallel=1
   len_n <- length(n)
   pred_err <- vector("list", len_n)
   if (parallel == TRUE) {
@@ -216,23 +216,18 @@ Three directions are useful for classification.
                                .options.RNG = seed) %dorng%
         data_analysis_sl(x = data$x[[i]][[j]], y = data$y[[i]],
                          xnew = data$xnew[[i]][[j]], ynew = data$ynew[[i]],
-                         oracle_rule = data$oracle_rule, lda = lda, qda = qda,
+                         oracle_rule = data$oracle_rule, qdap = qdap, lda = lda, qda = qda,
                          dsda = dsda, sqda = sqda, rda = rda)
     }
     Sys.setenv(OMP_NUM_THREADS = 4)
   } else {
     for (i in 1:len_n) {
-      pred_err[[i]] <-
-        data_analysis_sl(x = data$x[[i]][[1]], y = data$y[[i]],
-                         xnew = data$xnew[[i]][[1]], ynew = data$ynew[[i]],
-                         oracle_rule = data$oracle_rule, lda = lda, qda = qda,
-                         dsda = dsda, sqda = sqda, rda = rda)
-      for (j in 2:m) {
+      for (j in 1:m) {
         pred_err[[i]] <-
           rbind(pred_err[[i]],
                 data_analysis_sl(x = data$x[[i]][[j]], y = data$y[[i]],
                                  xnew = data$xnew[[i]][[j]], ynew = data$ynew[[i]],
-                                 oracle_rule = data$oracle_rule, lda = lda, qda = qda,
+                                 oracle_rule = data$oracle_rule, qdap = qdap, lda = lda, qda = qda,
                                  dsda = dsda, sqda = sqda, rda = rda))
       }
     }
