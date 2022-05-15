@@ -192,16 +192,79 @@ Three directions are useful for classification.
 | 250 | 32.65 (0.16) | 15.58 (0.13) | 32.39 (0.17) | 32.39 (0.16) | 19.06 (0.62) | 11.89 (0.11) | 7.42 (0.08) |
 | 300 | 32.00 (0.13) | 14.69 (0.11) | 31.79 (0.15) | 32.07 (0.16) | 19.57 (0.70) | 11.37 (0.10) | 7.25 (0.07) |
 
+* Simulation 6
+#+name: simulation 6 setup
+#+begin_src R
+  seed <- 2020
+  p <- 50
+  m <- 100
+  ntest <- 500
+  n <- c(100, 150, 200, 250, 300)
+  mu0 <- rep(0, p)
+  mu1 <- rep(1, p)
+  set.seed(seed)
+  temp <- matrix(rnorm(n = p * p), nrow = p)
+  sigma0 <- t(temp) %*% temp + diag(runif(n = p))
+  sigma1 <- sigma0
+  rm(temp)
+#+end_src
+
+#+call: data generation(t_dist=1,nu=3)
+
+#+call: models evaluation(name="sl6")
+
+#+call: data summary[:results value replace :colnames yes](name="sl6")
+
+#+RESULTS:
+|   n | LDA         | QDA          | RDA         | DSDA        | DAP          | QDAP        | Oracle      |
+|-----+-------------+--------------+-------------+-------------+--------------+-------------+-------------|
+| 100 | 8.69 (0.12) | 23.54 (0.26) | 9.07 (0.15) | 9.09 (0.15) | 24.06 (0.37) | 8.78 (0.12) | 5.22 (0.07) |
+| 150 | 7.40 (0.10) | 19.23 (0.19) | 7.67 (0.11) | 7.72 (0.11) | 18.36 (0.29) | 7.45 (0.10) | 5.09 (0.06) |
+| 200 | 6.86 (0.09) | 16.44 (0.14) | 7.03 (0.10) | 7.16 (0.11) | 14.81 (0.26) | 6.90 (0.09) | 5.06 (0.07) |
+| 250 | 6.25 (0.08) | 14.78 (0.16) | 6.49 (0.08) | 6.46 (0.09) | 13.43 (0.24) | 6.28 (0.08) | 4.96 (0.07) |
+| 300 | 6.23 (0.08) | 13.57 (0.14) | 6.37 (0.09) | 6.37 (0.09) | 11.68 (0.19) | 6.23 (0.08) | 5.13 (0.06) |
+
+* Simulation 7
+#+name: simulation 7 setup
+#+begin_src R
+  seed <- 2020
+  p <- 50
+  m <- 100
+  ntest <- 500
+  n <- c(100, 150, 200, 250, 300)
+  mu0 <- rep(0, p)
+  set.seed(seed)
+  mu1 <- rnorm(p, sd = 1 / sqrt(50))
+  sigma0 <- diag(c(10, rep(1, p - 1)))
+  sigma1 <- diag(p) + matrix(rep(2, p^2), nrow = p)
+#+end_src
+
+#+call: data generation(t_dist=1,nu=3)
+
+#+call: models evaluation(name="sl7")
+
+#+call: data summary[:results value replace :colnames yes](name="sl7")
+
+#+RESULTS:
+|   n | LDA          | QDA          | RDA          | DSDA         | DAP          | QDAP         | Oracle      |
+|-----+--------------+--------------+--------------+--------------+--------------+--------------+-------------|
+| 100 | 32.36 (0.20) | 22.57 (0.24) | 31.60 (0.25) | 32.08 (0.24) | 23.72 (0.55) | 22.54 (0.26) | 6.27 (0.09) |
+| 150 | 30.48 (0.18) | 19.62 (0.20) | 29.79 (0.18) | 30.19 (0.19) | 22.05 (0.48) | 17.72 (0.16) | 6.28 (0.08) |
+| 200 | 29.57 (0.17) | 17.74 (0.20) | 28.97 (0.19) | 29.50 (0.18) | 21.30 (0.45) | 16.08 (0.14) | 6.36 (0.07) |
+| 250 | 28.52 (0.16) | 16.48 (0.18) | 27.97 (0.15) | 28.19 (0.16) | 21.10 (0.44) | 15.43 (0.13) | 6.22 (0.08) |
+| 300 | 28.08 (0.14) | 16.03 (0.21) | 27.52 (0.14) | 27.99 (0.14) | 20.87 (0.45) | 14.77 (0.11) | 6.18 (0.07) |
+
 * Various Code Blocks
 :PROPERTIES:
 :APPENDIX: t
 :END:
 ** Data Generation Code
 #+name: data generation
-#+begin_src R
+#+begin_src R :var t_dist=0 nu=0
   set.seed(seed)
   data <- datagen_sl(mu0 = mu0, mu1 = mu1,
                      sigma0 = sigma0, sigma1 = sigma1,
+                     t_dist = t_dist, nu = nu,
                      m = m, ntest = ntest, n = n)
 #+end_src
 ** Models Evaluation Code
