@@ -316,6 +316,7 @@ Three directions are useful for classification.
   pd <- position_dodge(8)
   plot <- ggplot(data_summarized, aes(x = n, y = prediction.error,
                                       colour = method)) +
+    scale_x_continuous(breaks = n) +
     geom_errorbar(aes(ymin = prediction.error - ci.95,
                       ymax = prediction.error + ci.95),
                   width = 10, position = pd) +
