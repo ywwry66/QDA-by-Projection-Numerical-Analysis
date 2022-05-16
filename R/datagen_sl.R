@@ -13,15 +13,19 @@ mvrt <- function(n = 1, mu, sigma, nu) {
 }
 
 datagen_sl <- function(mu0, mu1, sigma0, sigma1, t_dist = FALSE, nu = t_dist,
-                       m=100, ntest=100, n=c(100, 150, 200, 250, 300)) {
+                       m=100, ntest=1000, n=c(200, 300, 400, 500, 600)) {
     len_n <- length(n)
     p <- length(mu0)
+    n0 <- floor(n / 2)
+    n1 <- n - n0
+    ntest0 <- floor(ntest / 2)
+    ntest1 <- ntest - ntest0
     ## generating y's
     y <- list()
     ynew <- list()
     for (i in 1:len_n) {
-        y[[i]] <- c(rep(0, n[i]), rep(1, n[i]))
-        ynew[[i]] <- c(rep(0, ntest), rep(1, ntest))
+        y[[i]] <- c(rep(0, n0[i]), rep(1, n1[i]))
+        ynew[[i]] <- c(rep(0, ntest0), rep(1, ntest1))
     }
     ## generating x's
     x <- list()
@@ -31,10 +35,10 @@ datagen_sl <- function(mu0, mu1, sigma0, sigma1, t_dist = FALSE, nu = t_dist,
             x[[i]] <- list()
             xnew[[i]] <- list()
             for (j in 1:m) {
-                x[[i]][[j]] <- rbind(mvrt(n[i], mu0, sigma0, nu),
-                                     mvrt(n[i], mu1, sigma1, nu))
-                xnew[[i]][[j]] <- rbind(mvrt(ntest, mu0, sigma0, nu),
-                                        mvrt(ntest, mu1, sigma1, nu))
+                x[[i]][[j]] <- rbind(mvrt(n0[i], mu0, sigma0, nu),
+                                     mvrt(n1[i], mu1, sigma1, nu))
+                xnew[[i]][[j]] <- rbind(mvrt(ntest0, mu0, sigma0, nu),
+                                        mvrt(ntest1, mu1, sigma1, nu))
             }
         }
         ## generating oracle rules
@@ -43,16 +47,21 @@ datagen_sl <- function(mu0, mu1, sigma0, sigma1, t_dist = FALSE, nu = t_dist,
         sigma0_inv <- solve(sigma0)
         sigma1_inv <- solve(sigma1)
         oracle_rule <- function(xnew)
-            as.numeric((1 + t(xnew - mu0) %*% sigma0_inv %*% (xnew - mu0) / nu) ^ (-(nu + p) / 2) / sqrt(dsigma0) < (1 + t(xnew - mu1) %*% sigma1_inv %*% (xnew - mu1) / nu) ^ (-(nu + p) / 2) / sqrt(dsigma1))
+            as.numeric((1 + t(xnew - mu0) %*% sigma0_inv %*%
+                        (xnew - mu0) / nu) ^ (-(nu + p) / 2) /
+                       sqrt(dsigma0) <
+                       (1 + t(xnew - mu1) %*% sigma1_inv %*%
+                        (xnew - mu1) / nu) ^ (-(nu + p) / 2) /
+                       sqrt(dsigma1))
     } else {
         for (i in 1:len_n) {
             x[[i]] <- list()
             xnew[[i]] <- list()
             for (j in 1:m) {
-                x[[i]][[j]] <- rbind(mvrnorm(n[i], mu0, sigma0),
-                                     mvrnorm(n[i], mu1, sigma1))
-                xnew[[i]][[j]] <- rbind(mvrnorm(ntest, mu0, sigma0),
-                                        mvrnorm(ntest, mu1, sigma1))
+                x[[i]][[j]] <- rbind(mvrnorm(n0[i], mu0, sigma0),
+                                     mvrnorm(n1[i], mu1, sigma1))
+                xnew[[i]][[j]] <- rbind(mvrnorm(ntest0, mu0, sigma0),
+                                        mvrnorm(ntest1, mu1, sigma1))
             }
         }
         ## generating oracle rules
