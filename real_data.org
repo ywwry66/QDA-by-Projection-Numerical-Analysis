@@ -241,7 +241,7 @@ $p=13$, $n=303$. Repeat $m=300$ times for average test error.
   pd <- position_dodge(0.01)
   plot <- ggplot(data_summarized, aes(x = pct., y = prediction.error,
                                       colour = method)) +
-    scale_x_continuous(breaks = pct.) +
+    scale_x_continuous(breaks = per) +
     geom_errorbar(aes(ymin = prediction.error - ci.95,
                       ymax = prediction.error + ci.95),
                   width = .02, position = pd) +
